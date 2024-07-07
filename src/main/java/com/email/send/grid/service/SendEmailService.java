@@ -35,14 +35,6 @@ import com.email.send.grid.constants.EmailConfigConstants;
 @Service
 public class SendEmailService {
 
-    @Value("${sendgrid.api.key}")
-    private String sendGridApiKey;
-
-    @Value("${alibaba.cloud.access-key}")
-    private String accesskeyId;
-
-    @Value("${alibaba.cloud.secret-key}")
-    private String accessKeySecret;
 
     public String sendEmail(SendEmailDto emailDto) {
         Email fromEmail = new Email(emailDto.getFromEmail());
@@ -70,8 +62,6 @@ public class SendEmailService {
             SendGrid sg = null;
             if (emailDto.apiKey != null && !emailDto.apiKey.isEmpty()) {
                 sg = new SendGrid(emailDto.apiKey);
-            } else {
-                sg = new SendGrid(sendGridApiKey);
             }
 
             Request request = new Request();
@@ -102,13 +92,13 @@ public class SendEmailService {
         } else {
             regionId = EmailConfigConstants.REGION_ID_SINGAPOOR;
         }
-        if (emailDto.getAccessId() != null && !emailDto.getAccessId().isEmpty()) {
-            accesskeyId = emailDto.getAccessId();
-        }
-        if (emailDto.getAccessKey() != null && !emailDto.getAccessKey().isEmpty()) {
-            accessKeySecret = emailDto.getAccessKey();
-        }
-        IClientProfile profile = DefaultProfile.getProfile(regionId, accesskeyId, accessKeySecret);
+//        if (emailDto.getAccessId() != null && !emailDto.getAccessId().isEmpty()) {
+//            accesskeyId = emailDto.getAccessId();
+//        }
+//        if (emailDto.getAccessKey() != null && !emailDto.getAccessKey().isEmpty()) {
+//            accessKeySecret = emailDto.getAccessKey();
+//        }
+        IClientProfile profile = DefaultProfile.getProfile(regionId, emailDto.getAccessId(), emailDto.getAccessKey());
         IAcsClient client = new DefaultAcsClient(profile);
 
         try {
