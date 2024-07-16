@@ -16,6 +16,5 @@ public class EmailConfigConstants {
 
     // Alibaba cloud email configuration
     public static final String SMTP_PORT = "465"; // SMTP port (SSL)
-    public static final String USERNAME = "diptikanta@behealthylifestyle.com"; // Your SMTP username (email address)
-    public static final String PASSWORD = "PgSd1997Htsl"; // Your SMTP password
+
 }
