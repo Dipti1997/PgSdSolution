@@ -60,31 +60,25 @@ public class SendEmailWithAlibabaService {
         });
         try {
         // String encodedBody = Base64Encoder.encode(emailDto.getBody());
-            if (emailDto.getTestEmail() != null && !emailDto.getTestEmail().isEmpty()) {
+            if (emailDto.getTestEmail() != null && !emailDto.getTestEmail().isEmpty() && emailDto.emailType.equals("test")) {
                 String toAddress = emailDto.testEmail; // Single recipient for single email
                 sendSingleEmail(session, emailDto.getFromEmail(), emailDto.getFromName(), toAddress,
                         emailDto.getSubject(), emailDto.getBody());
-            } else if (emailDto.getBulkEmail() == null || !emailDto.getBulkEmail().isEmpty()) {
-                List<String> recipients =
+            } else if (emailDto.getBulkEmail() == null || !emailDto.getBulkEmail().isEmpty() && emailDto.emailType.equals("bulk")) {
+                List<String> uiRecipients =
                         Arrays.asList(emailDto.getBulkEmail().split(",")); // Multiple recipients for batch email
-                List<String> receipants = null;
+                List<String> tempRecipients = null;
                 try {
-                    receipants = commonUtils.updateCsvFile(emailDto.dataFile, emailDto.limit,azureStorageAccountName,azureStorageAccountKey,destinationContainer);
+                    tempRecipients = commonUtils.updateCsvFile(emailDto.dataFile, emailDto.limit,azureStorageAccountName,azureStorageAccountKey,destinationContainer);
                 }catch (Exception e){
                     return "Failed to fetch data from Temp file: "+ emailDto.dataFile;
                 }
-                recipients.addAll(receipants);
-                sendBatchEmail(session, emailDto.getFromEmail(), emailDto.getFromName(),
-                        emailDto.getSubject(), emailDto.getBody(), recipients);
-            } else if (emailDto.dataFile != null && !emailDto.dataFile.isEmpty()) {
-                List<String> receipants = null;
-                try {
-                    receipants = commonUtils.updateCsvFile(emailDto.dataFile, emailDto.limit,azureStorageAccountName,azureStorageAccountKey,destinationContainer);
-                }catch (Exception e){
-                    return "Failed to fetch data from Temp file: "+ emailDto.dataFile;
+                uiRecipients.addAll(tempRecipients);
+                boolean ismailSuccess = sendBatchEmail(session, emailDto.getFromEmail(), emailDto.getFromName(),
+                        emailDto.getSubject(), emailDto.getBody(), uiRecipients);
+                if (ismailSuccess){
+                    // TODO remove mails from temp file
                 }
-                sendBatchEmail(session, emailDto.getFromEmail(), emailDto.getFromName(),
-                        emailDto.getSubject(), emailDto.getBody(), receipants);
             } else {
                 System.out.println("Invalid email type specified. Use 'single' or 'batch'.");
             }
@@ -102,8 +96,6 @@ public class SendEmailWithAlibabaService {
         message.setFrom(new InternetAddress(fromAlias, fromName));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toAddress));
         message.setSubject(subject);
-//        message.setText(body);
-//        message.setContent(body, "text/html; charset=utf-8");
 
         // Create a multipart message for HTML content
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
@@ -120,14 +112,12 @@ public class SendEmailWithAlibabaService {
         System.out.println("Single email sent to " + toAddress);
     }
 
-    private static void sendBatchEmail(Session session, String fromAlias, String fromName,
+    private static boolean sendBatchEmail(Session session, String fromAlias, String fromName,
                                        String subject, String body, List<String> recipients)
             throws MessagingException, UnsupportedEncodingException {
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(fromAlias, fromName));
         message.setSubject(subject);
-//        message.setText(body);
-//        message.setContent(body, "text/html; charset=utf-8");
 
         // Create a multipart message for HTML content
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
@@ -140,10 +130,11 @@ public class SendEmailWithAlibabaService {
         // Set the multipart message to the email message
         message.setContent(multipart);
 
-        for (String recipient : recipients) {
-            message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        for (String toAddress : recipients) {
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toAddress));
             Transport.send(message);
-            System.out.println("Batch email sent to " + recipient);
+            System.out.println("Batch email sent to " + toAddress);
         }
+        return true;
     }
 }
